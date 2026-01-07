@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { signToken } from "@/lib/services/jwt"
+import { SignJWT } from "jose"
 import { cookies } from "next/headers"
 
 export async function POST(req) {
@@ -68,32 +68,40 @@ export async function POST(req) {
       )
     }
 
-    // ✅ JWT (1 hour expiry)
-    const token = signToken({
-      uid: user.id,
+    // ✅ JWT Generation using jose (24 hours expiry)
+    const secret = new TextEncoder().encode(
+      process.env.JWT_SECRET || "your_fallback_secret_change_in_production_min_32_chars"
+    )
+    
+    const token = await new SignJWT({
+      userId: user.id,
       email: user.email,
-      role,
+      role: role,
       type: "admin",
     })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("24h") // 24 hours
+      .sign(secret)
 
-    // ✅ SET COOKIE (1 hour = 3600 seconds)
+    // ✅ SET SECURE COOKIE (24 hours = 86400 seconds)
     const cookieStore = await cookies()
     cookieStore.set(
-      "hgdhgf76776djhfjdhfjdh87878dfdjhfj",
+      "auth_token", // Changed from random string to standard name
       token,
       {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict", // Changed from 'lax' to 'strict' for better security
         path: "/",
-        maxAge: 3600, // ✅ 1 hour = 3600 seconds
+        maxAge: 86400, // 24 hours = 86400 seconds
       }
     )
 
     return NextResponse.json({
       message: "Login successful",
       token,
-      expiresIn: 3600, // ✅ 3600 seconds = 1 hour
+      expiresIn: 86400, // 24 hours in seconds
       user: {
         id: user.id,
         name: user.name,
@@ -105,7 +113,7 @@ export async function POST(req) {
   } catch (err) {
     console.error("VERIFY OTP ERROR:", err)
     return NextResponse.json(
-      { message: "Server error" },
+      { message: "Server error", error: process.env.NODE_ENV === "development" ? err.message : undefined },
       { status: 500 }
     )
   }

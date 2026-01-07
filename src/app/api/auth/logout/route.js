@@ -1,16 +1,31 @@
+// app/api/auth/logout/route.js
+
 import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
 
 export async function POST() {
-  const res = NextResponse.json({ message: "Logged out" })
+  try {
+    const cookieStore = await cookies()
+    
+    // Clear the auth token cookie
+    cookieStore.delete("auth_token")
 
-  // 🔥 EXACT same options as login cookie
-  res.cookies.set("hgdhgf76776djhfjdhfjdh87878dfdjhfj", "", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0, // 👈 THIS DELETES COOKIE
-  })
+    return NextResponse.json(
+      { 
+        message: "Logged out successfully",
+        success: true 
+      },
+      { status: 200 }
+    )
+  } catch (err) {
+    console.error("LOGOUT ERROR:", err)
+    return NextResponse.json(
+      { message: "Server error" },
+      { status: 500 }
+    )
+  }
+}
 
-  return res
+export async function GET() {
+  return POST()
 }
