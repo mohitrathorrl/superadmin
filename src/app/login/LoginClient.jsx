@@ -29,41 +29,24 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const [loading, setLoading] = useState(false)
-  const [resendCooldown, setResendCooldown] = useState(0)
 
   const otpRefs = useRef([])
   
-  // Check for expired session
   useEffect(() => {
     if (searchParams.get("expired") === "true") {
       toast.error("Your session has expired. Please login again.", {
-        duration: 4000,
+        duration: 5000,
       })
     }
   }, [searchParams])
 
-  // Resend cooldown timer
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [resendCooldown])
-
   /* ========================= SEND OTP ========================= */
   const handleEmailSubmit = async (e) => {
     e.preventDefault()
-    if (loading || resendCooldown > 0) return
+    if (loading) return
 
     if (!email) {
       toast.error("Email is required")
-      return
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email")
       return
     }
 
@@ -75,13 +58,12 @@ export default function LoginPage() {
         body: { email },
       })
 
-      toast.success("OTP sent to your email", { duration: 3000 })
+      toast.success("OTP sent to your email")
       setStep("otp")
-      setResendCooldown(60) // 60 second cooldown
 
       setTimeout(() => otpRefs.current[0]?.focus(), 200)
     } catch (err) {
-      toast.error(err.message || "Failed to send OTP")
+      toast.error(err.message)
     } finally {
       setLoading(false)
     }
@@ -95,14 +77,8 @@ export default function LoginPage() {
     next[index] = value
     setOtp(next)
 
-    // Auto-focus next input
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus()
-    }
-
-    // Auto-submit when all 6 digits entered
-    if (value && index === 5 && next.every(digit => digit !== "")) {
-      setTimeout(() => handleVerifyOtp(next.join("")), 100)
     }
   }
 
@@ -118,22 +94,18 @@ export default function LoginPage() {
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "")
     
     if (pasted.length === 6) {
-      const newOtp = pasted.split("")
-      setOtp(newOtp)
-      setTimeout(() => {
-        otpRefs.current[5]?.focus()
-        handleVerifyOtp(pasted)
-      }, 100)
+      setOtp(pasted.split(""))
+      setTimeout(() => otpRefs.current[5]?.focus(), 100)
     }
   }
 
   /* ========================= VERIFY OTP ========================= */
-  const handleVerifyOtp = async (otpString = null) => {
+  const handleVerifyOtp = async () => {
     if (loading) return
 
-    const otpValue = otpString || otp.join("")
+    const otpValue = otp.join("")
     if (otpValue.length !== 6) {
-      toast.error("Please enter complete 6-digit OTP")
+      toast.error("Enter complete OTP")
       return
     }
 
@@ -145,41 +117,24 @@ export default function LoginPage() {
         body: { email, otp: otpValue },
       })
 
-      // ✅ Login WITHOUT showing timer
       login({
         user: res.user,
         token: res.token,
       })
 
-      toast.success("Login successful!", { duration: 2000 })
-      
-      // Small delay for smooth transition
-      setTimeout(() => {
-        router.replace("/dashboard")
-      }, 500)
+      toast.success("Login successful")
+      router.replace("/dashboard")
 
     } catch (err) {
-      toast.error(err.message || "Invalid OTP")
-      // Clear OTP on error
-      setOtp(["", "", "", "", "", ""])
-      otpRefs.current[0]?.focus()
+      toast.error(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  /* ========================= RESEND OTP ========================= */
-  const handleResendOTP = async () => {
-    if (resendCooldown > 0) return
-    
-    setOtp(["", "", "", "", "", ""])
-    otpRefs.current[0]?.focus()
-    
-    await handleEmailSubmit(new Event('submit'))
-  }
-
   /* ========================= UI ========================= */
   return (
+<<<<<<< HEAD
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left side - Animation (hidden on mobile) */}
       <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100">
@@ -324,6 +279,96 @@ export default function LoginPage() {
 
          
          
+=======
+    <div className="min-h-screen flex">
+      <div className="hidden lg:flex w-1/2 items-center justify-center bg-zinc-50">
+        <Player
+          autoplay
+          loop
+          src={loginJson}
+          className="max-w-md"
+          style={{ height: "350px", width: "350px" }}
+        />
+      </div>
+
+      <div className="flex w-full lg:w-1/2 min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-md surface p-8 space-y-6">
+          <div className="flex justify-center">
+            <img 
+              src="https://fincloud-tech.s3.ap-south-1.amazonaws.com/finclouds_logo.png" 
+              alt="FinCloud Logo" 
+              className="h-6" 
+            />
+          </div>
+
+          <div>
+            <h1 className="text-2xl font-bold">
+              {step === "email" ? "Sign in to your account" : "Verify OTP"}
+            </h1>
+            <p className="mt-1 text-sm text-zinc-600">
+              {step === "email"
+                ? "Enter your email to continue"
+                : `Enter the 6-digit code sent to ${email}`}
+            </p>
+          </div>
+
+          {step === "email" && (
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Email address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-lg focus:ring-1 focus:ring-black"
+                    placeholder="you@example.com"
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="btn-primary w-full gap-2" disabled={loading}>
+                {loading ? <Spinner size={18} /> : <>Continue <ArrowRight size={16} /></>}
+              </Button>
+            </form>
+          )}
+
+          {step === "otp" && (
+            <div className="space-y-6">
+              <div className="flex justify-center gap-2 sm:gap-3">
+                {otp.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => (otpRefs.current[i] = el)}
+                    value={digit}
+                    maxLength={1}
+                    onChange={(e) => handleOtpChange(e.target.value, i)}
+                    onKeyDown={(e) => handleOtpKeyDown(e, i)}
+                    onPaste={(e) => handleOtpPaste(e, i)}
+                    className="w-10 h-10 sm:w-12 sm:h-12 text-center border rounded-lg focus:ring-2 focus:ring-black"
+                  />
+                ))}
+              </div>
+
+              <Button onClick={handleVerifyOtp} className="btn-primary w-full" disabled={loading}>
+                {loading ? <Spinner size={18} /> : "Verify & Login"}
+              </Button>
+
+              <button
+                onClick={() => {
+                  setOtp(["", "", "", "", "", ""])
+                  setStep("email")
+                }}
+                className="text-sm text-zinc-500 hover:underline w-full"
+              >
+                Change email
+              </button>
+            </div>
+          )}
+>>>>>>> 3b2339a499f740d9eebb1e81a220e4d61e27a356
         </div>
       </div>
     </div>
