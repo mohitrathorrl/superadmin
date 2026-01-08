@@ -1,8 +1,9 @@
-// lib/email/sendEmail.js - Email Sending Service
+// lib/email/sendEmail.js - Email Sending Service (FIXED)
 import nodemailer from 'nodemailer';
-import { getOTPEmailTemplate } from './emailTemplates';
+import { getOTPEmailTemplate } from './emailTemplates.js';
 
-const transporter = nodemailer.createTransporter({
+// ✅ FIXED: Use createTransport (not createTransporter)
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
@@ -22,10 +23,12 @@ export async function sendOTPEmail(email, otp, userName = 'User') {
       to: email,
       subject: `🔐 Your Verification Code: ${otp}`,
       html: htmlContent,
-      text: `Hello ${userName},\n\nYour RupeeLending verification code is: ${otp}\n\nThis code expires in 10 minutes.`,
+      text: `Hello ${userName},\n\nYour RupeeLending verification code is: ${otp}\n\nThis code expires in 10 minutes.\n\nDo not share this code with anyone.\n\n© ${new Date().getFullYear()} RupeeLending. All rights reserved.`,
     };
 
     const info = await transporter.sendMail(mailOptions);
+    
+    console.log('✅ Email sent successfully:', info.messageId);
     
     return {
       success: true,
