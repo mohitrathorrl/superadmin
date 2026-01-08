@@ -191,27 +191,23 @@ export default function LoginPage() {
             className="max-w-md mx-auto"
             style={{ height: "400px", width: "400px" }}
           />
-          <h2 className="text-2xl font-bold text-zinc-800 mt-6">Welcome Back!</h2>
-          <p className="text-zinc-600 mt-2 max-w-sm mx-auto">
-            Secure admin portal with enterprise-grade authentication
-          </p>
         </div>
       </div>
 
       {/* Right side - Login form */}
       <div className="flex w-full lg:w-1/2 min-h-screen items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <img 
-              src="https://fincloud-tech.s3.ap-south-1.amazonaws.com/finclouds_logo.png" 
-              alt="FinCloud Logo" 
-              className="h-8 sm:h-10" 
-            />
-          </div>
-
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-xl border border-zinc-200 p-6 sm:p-8 space-y-6">
+            {/* Logo */}
+            <div className="flex justify-center mb-4">
+              <img 
+                src="https://fincloud-tech.s3.ap-south-1.amazonaws.com/finclouds_logo.png" 
+                alt="FinCloud Logo" 
+                className="h-8 sm:h-10" 
+              />
+            </div>
+
             {/* Header */}
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-100 mb-4">
@@ -244,7 +240,7 @@ export default function LoginPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value.toLowerCase().trim())}
-                      className="w-full pl-11 pr-4 py-3 border-2 border-zinc-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 transition-all text-base"
+                      className="w-full pl-11 pr-4 py-3 border-2 border-zinc-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black transition-all text-base"
                       placeholder="you@example.com"
                       autoComplete="email"
                       autoFocus
@@ -252,9 +248,9 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <Button 
+                <button
                   type="submit" 
-                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-base" 
+                  className="w-full bg-black hover:bg-zinc-800 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-base disabled:opacity-50 disabled:cursor-not-allowed" 
                   disabled={loading || !email}
                 >
                   {loading ? (
@@ -264,7 +260,7 @@ export default function LoginPage() {
                       Continue <ArrowRight size={18} />
                     </>
                   )}
-                </Button>
+                </button>
               </form>
             )}
 
@@ -286,7 +282,7 @@ export default function LoginPage() {
                         onChange={(e) => handleOtpChange(e.target.value, i)}
                         onKeyDown={(e) => handleOtpKeyDown(e, i)}
                         onPaste={(e) => handleOtpPaste(e, i)}
-                        className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold border-2 border-zinc-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 transition-all"
+                        className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold border-2 border-zinc-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black transition-all"
                         inputMode="numeric"
                         autoComplete="off"
                       />
@@ -295,13 +291,13 @@ export default function LoginPage() {
                 </div>
 
                 {/* Verify Button */}
-                <Button 
+                <button
                   onClick={handleVerifyOtp} 
-                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-medium transition-all text-base" 
+                  className="w-full bg-black hover:bg-zinc-800 text-white py-3 rounded-xl font-medium transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed" 
                   disabled={loading || otp.some(d => !d)}
                 >
                   {loading ? <Spinner size={20} /> : "Verify & Login"}
-                </Button>
+                </button>
 
                 {/* Resend & Change Email */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
@@ -331,11 +327,6 @@ export default function LoginPage() {
               </div>
             )}
           </div>
-
-          {/* Footer */}
-          <p className="text-center text-xs sm:text-sm text-zinc-500 mt-6">
-            Secured by enterprise-grade authentication
-          </p>
         </div>
       </div>
     </div>
