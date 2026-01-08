@@ -5,9 +5,15 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   
-  // Image optimization
+  // Image optimization (updated for Next.js 16)
   images: {
-    domains: ['fincloud-tech.s3.ap-south-1.amazonaws.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'fincloud-tech.s3.ap-south-1.amazonaws.com',
+        pathname: '/**',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
   },
   
@@ -18,14 +24,10 @@ const nextConfig = {
     },
   },
   
-  // Webpack configuration
-  webpack: (config, { isServer }) => {
-    // Suppress specific warnings
-    config.infrastructureLogging = {
-      level: 'error',
-    };
-    
-    return config;
+  // Turbopack configuration (Next.js 16+)
+  turbopack: {
+    // Empty config to silence Turbopack warning
+    // Most apps work fine with default Turbopack settings
   },
 };
 
