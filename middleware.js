@@ -1,7 +1,7 @@
-// middleware.js - Enhanced Security with CSRF Protection + Fixed Redirects
+// middleware.js - Enhanced Security (Production Ready)
 import { NextResponse } from 'next/server';
 import { verifyToken } from './src/lib/auth/jwt';
-import { validateOrigin, validateReferer, verifyCSRFToken } from './src/lib/security/csrf';
+import { validateOrigin, validateReferer } from './src/lib/security/csrf';
 
 export async function middleware(request) {
   const token = request.cookies.get('auth_token')?.value;
@@ -10,8 +10,6 @@ export async function middleware(request) {
   // Public routes
   const publicRoutes = ['/login', '/signup', '/forgot-password', '/verify-email'];
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-
-  // Root path
   const isRootPath = pathname === '/';
 
   // Static files and API health checks
@@ -30,14 +28,13 @@ export async function middleware(request) {
     const host = request.headers.get('host');
     const referer = request.headers.get('referer');
     
-    // Skip CSRF check for auth endpoints (send-otp, verify-otp, csrf token generation)
+    // Skip CSRF check for auth endpoints
     if (pathname === '/api/auth/csrf' || pathname === '/api/auth/send-otp' || pathname === '/api/auth/verify-otp') {
       return NextResponse.next();
     }
     
     // Validate Origin header
     if (!validateOrigin(origin, host)) {
-      console.warn('🚨 CSRF attempt detected - Invalid origin:', origin);
       return NextResponse.json(
         { success: false, message: 'Invalid origin' },
         { status: 403 }
@@ -46,7 +43,6 @@ export async function middleware(request) {
     
     // Validate Referer header
     if (!validateReferer(referer, host)) {
-      console.warn('🚨 CSRF attempt detected - Invalid referer:', referer);
       return NextResponse.json(
         { success: false, message: 'Invalid referer' },
         { status: 403 }
@@ -57,12 +53,10 @@ export async function middleware(request) {
   // ✅ Root path handling
   if (isRootPath) {
     if (token) {
-      // Verify token before redirecting
       const verified = await verifyToken(token);
       if (verified.success) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       } else {
-        // Token invalid, clear and redirect to login
         const response = NextResponse.redirect(new URL('/login', request.url));
         response.cookies.delete('auth_token');
         response.cookies.delete('csrf_token');
@@ -84,10 +78,8 @@ export async function middleware(request) {
   if (token && isPublicRoute) {
     const verified = await verifyToken(token);
     if (verified.success) {
-      // Valid token, redirect to dashboard
       return NextResponse.redirect(new URL('/dashboard', request.url));
     } else {
-      // Invalid token, clear cookies and allow access to public route
       const response = NextResponse.next();
       response.cookies.delete('auth_token');
       response.cookies.delete('csrf_token');
@@ -100,14 +92,13 @@ export async function middleware(request) {
     const verified = await verifyToken(token);
     
     if (!verified.success) {
-      console.warn('⚠️ Invalid/expired token, logging out user');
       const response = NextResponse.redirect(new URL('/login?expired=true', request.url));
       response.cookies.delete('auth_token');
       response.cookies.delete('csrf_token');
       return response;
     }
 
-    // Add user info to request headers for downstream use
+    // Add user info to request headers
     const response = NextResponse.next();
     response.headers.set('x-user-id', verified.payload.userId?.toString() || '');
     response.headers.set('x-user-email', verified.payload.email || '');

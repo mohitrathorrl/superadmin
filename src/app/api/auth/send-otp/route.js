@@ -1,4 +1,4 @@
-// app/api/auth/send-otp/route.js - With Rate Limiting & Performance Optimization
+// app/api/auth/send-otp/route.js - Production (No Console Logs)
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db/mysql';
 import { sendOTPEmail } from '@/lib/email/sendEmail';
@@ -9,7 +9,6 @@ export async function POST(request) {
   try {
     const { email } = await request.json();
 
-    // ✅ Input validation
     if (!email) {
       return NextResponse.json(
         { success: false, message: 'Email is required' },
@@ -17,7 +16,6 @@ export async function POST(request) {
       );
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -26,16 +24,13 @@ export async function POST(request) {
       );
     }
 
-    // ✅ Rate limiting by IP
     const clientId = getClientIdentifier(request);
     const rateLimit = checkRateLimit(clientId, 'otp');
     
     if (!rateLimit.allowed) {
-      console.warn(`🚨 Rate limit exceeded for IP: ${clientId}`);
       return createRateLimitResponse(rateLimit);
     }
 
-    // ✅ Check in both root admin and super admin tables (optimized with Promise.all)
     const [rootAdmins, superAdmins] = await Promise.all([
       query({
         query: 'SELECT id, email, name, "root" as role FROM sup_root_admin WHERE email = ? AND is_active = 1',
@@ -65,11 +60,9 @@ export async function POST(request) {
       );
     }
 
-    // Generate 6-digit OTP
     const otp = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // ✅ Parallel execution: Store OTP and send email
     const [, emailResult] = await Promise.all([
       query({
         query: 'INSERT INTO sup_login_otp (email, otp, role, expires_at, is_used) VALUES (?, ?, ?, ?, 0)',
@@ -88,10 +81,9 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       message: 'OTP sent successfully to your email',
-      expiresIn: 600, // seconds
+      expiresIn: 600,
     });
   } catch (error) {
-    console.error('❌ Send OTP error:', error);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }

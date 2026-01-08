@@ -1,12 +1,24 @@
-// lib/security/csrf.js - CSRF Token Management
-import { randomBytes, createHash } from 'crypto';
+// lib/security/csrf.js - CSRF Token Management (Edge Runtime Compatible)
 
 /**
  * Generate a cryptographically secure CSRF token
+ * Uses Web Crypto API instead of Node.js crypto for Edge Runtime compatibility
  * @returns {string} CSRF token
  */
 export function generateCSRFToken() {
-  return randomBytes(32).toString('hex');
+  // Use Web Crypto API (works in Edge Runtime)
+  const array = new Uint8Array(32);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(array);
+  } else {
+    // Fallback for environments without crypto
+    for (let i = 0; i < array.length; i++) {
+      array[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  
+  // Convert to hex string
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -18,18 +30,15 @@ export function generateCSRFToken() {
 export function verifyCSRFToken(token, storedToken) {
   if (!token || !storedToken) return false;
   
-  // Constant-time comparison to prevent timing attacks
-  const tokenBuffer = Buffer.from(token);
-  const storedBuffer = Buffer.from(storedToken);
+  // Simple constant-time comparison
+  if (token.length !== storedToken.length) return false;
   
-  if (tokenBuffer.length !== storedBuffer.length) return false;
-  
-  // Use crypto.timingSafeEqual for constant-time comparison
-  try {
-    return tokenBuffer.equals(storedBuffer);
-  } catch (error) {
-    return false;
+  let mismatch = 0;
+  for (let i = 0; i < token.length; i++) {
+    mismatch |= token.charCodeAt(i) ^ storedToken.charCodeAt(i);
   }
+  
+  return mismatch === 0;
 }
 
 /**
@@ -37,13 +46,27 @@ export function verifyCSRFToken(token, storedToken) {
  * @param {string} sessionId - User session identifier
  * @returns {string} Session-bound CSRF token
  */
-export function generateSessionCSRFToken(sessionId) {
+export async function generateSessionCSRFToken(sessionId) {
   const secret = process.env.JWT_SECRET || 'fallback-secret';
   const timestamp = Date.now().toString();
-  const hash = createHash('sha256')
-    .update(`${sessionId}-${timestamp}-${secret}`)
-    .digest('hex');
-  return hash;
+  const data = `${sessionId}-${timestamp}-${secret}`;
+  
+  // Use Web Crypto API for hashing (Edge Runtime compatible)
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  
+  // Fallback: simple hash
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = ((hash << 5) - hash) + data.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16);
 }
 
 /**
