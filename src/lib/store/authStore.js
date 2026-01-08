@@ -1,10 +1,10 @@
-// lib/store/authStore.js
+// lib/store/authStore.js - Clean without timer display in UI
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { verifyToken } from "@/lib/services/jwt"
 
-let logoutTimer = null // ✅ Global timer outside store
+let logoutTimer = null // ✅ Global timer for auto-logout
 
 export const useAuthStore = create(
   persist(
@@ -17,17 +17,15 @@ export const useAuthStore = create(
       /* =========================
          LOGIN
       ========================= */
-     // lib/store/authStore.js - Line 16 change karo
-
-login: ({ user, token, expiresIn = 3600 }) => { // ✅ Default 3600 seconds
-  const expiresAt = Date.now() + expiresIn * 1000
-  set({ user, token, expiresAt })
-  
-  console.log(`✅ Logged in. Auto logout in ${expiresIn} seconds`)
-  
-  // ✅ START TIMER
-  startLogoutTimer(expiresIn)
-},
+      login: ({ user, token, expiresIn = 3600 }) => {
+        const expiresAt = Date.now() + expiresIn * 1000
+        set({ user, token, expiresAt })
+        
+        console.log(`✅ User logged in: ${user?.name || user?.email}`)
+        
+        // ✅ START SILENT AUTO-LOGOUT TIMER (no UI display)
+        startLogoutTimer(expiresIn)
+      },
 
       /* =========================
          LOGOUT
@@ -107,9 +105,9 @@ login: ({ user, token, expiresIn = 3600 }) => { // ✅ Default 3600 seconds
               state.expiresAt = null
             } else {
               const remainingSec = Math.floor(remainingMs / 1000)
-              console.log(`✅ Token valid. ${remainingSec}s remaining`)
+              console.log(`✅ Token valid. Session active.`)
               
-              // Restart timer with remaining time
+              // ✅ Restart silent timer with remaining time
               startLogoutTimer(remainingSec)
             }
           }
@@ -122,7 +120,8 @@ login: ({ user, token, expiresIn = 3600 }) => { // ✅ Default 3600 seconds
 )
 
 /* =========================
-   GLOBAL LOGOUT TIMER FUNCTION
+   SILENT AUTO-LOGOUT TIMER
+   (Backend handles expiry, this is backup)
 ========================= */
 function startLogoutTimer(seconds) {
   // Clear existing timer
@@ -130,7 +129,7 @@ function startLogoutTimer(seconds) {
     clearTimeout(logoutTimer)
   }
 
-  console.log(`⏰ Starting logout timer: ${seconds} seconds`)
+  console.log(`⏰ Silent auto-logout timer started: ${seconds}s`)
 
   logoutTimer = setTimeout(() => {
     console.warn("⏰ AUTO LOGOUT - Session expired!")
