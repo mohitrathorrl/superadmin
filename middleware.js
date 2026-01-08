@@ -1,4 +1,4 @@
-// middleware.js - Enhanced Security with CSRF Protection
+// middleware.js - Enhanced Security with CSRF Protection + Fixed Redirects
 import { NextResponse } from 'next/server';
 import { verifyToken } from './src/lib/auth/jwt';
 import { validateOrigin, validateReferer, verifyCSRFToken } from './src/lib/security/csrf';
@@ -10,6 +10,9 @@ export async function middleware(request) {
   // Public routes
   const publicRoutes = ['/login', '/signup', '/forgot-password', '/verify-email'];
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+
+  // Root path
+  const isRootPath = pathname === '/';
 
   // Static files and API health checks
   if (
@@ -27,8 +30,8 @@ export async function middleware(request) {
     const host = request.headers.get('host');
     const referer = request.headers.get('referer');
     
-    // Skip CSRF check for token generation endpoint
-    if (pathname === '/api/auth/csrf') {
+    // Skip CSRF check for auth endpoints (send-otp, verify-otp, csrf token generation)
+    if (pathname === '/api/auth/csrf' || pathname === '/api/auth/send-otp' || pathname === '/api/auth/verify-otp') {
       return NextResponse.next();
     }
     
@@ -49,35 +52,50 @@ export async function middleware(request) {
         { status: 403 }
       );
     }
-    
-    // Verify CSRF token for authenticated requests
-    if (token && !pathname.includes('/send-otp')) {
-      const csrfToken = request.headers.get('x-csrf-token');
-      const csrfCookie = request.cookies.get('csrf_token')?.value;
-      
-      if (!verifyCSRFToken(csrfToken, csrfCookie)) {
-        console.warn('🚨 CSRF token validation failed');
-        return NextResponse.json(
-          { success: false, message: 'Invalid CSRF token' },
-          { status: 403 }
-        );
+  }
+
+  // ✅ Root path handling
+  if (isRootPath) {
+    if (token) {
+      // Verify token before redirecting
+      const verified = await verifyToken(token);
+      if (verified.success) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      } else {
+        // Token invalid, clear and redirect to login
+        const response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.delete('auth_token');
+        response.cookies.delete('csrf_token');
+        return response;
       }
+    } else {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
   }
 
-  // ✅ Authentication check - No token + protected route → redirect to login
+  // ✅ NO TOKEN + PROTECTED ROUTE → Redirect to login
   if (!token && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // ✅ Logged in + public route → redirect to dashboard
+  // ✅ HAS TOKEN + PUBLIC ROUTE → Verify token first
   if (token && isPublicRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const verified = await verifyToken(token);
+    if (verified.success) {
+      // Valid token, redirect to dashboard
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    } else {
+      // Invalid token, clear cookies and allow access to public route
+      const response = NextResponse.next();
+      response.cookies.delete('auth_token');
+      response.cookies.delete('csrf_token');
+      return response;
+    }
   }
 
-  // ✅ Verify JWT token for protected routes
+  // ✅ VERIFY JWT TOKEN for protected routes
   if (token && !isPublicRoute) {
     const verified = await verifyToken(token);
     
