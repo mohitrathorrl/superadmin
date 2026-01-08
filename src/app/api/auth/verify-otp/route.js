@@ -1,17 +1,29 @@
-// app/api/auth/verify-otp/route.js - UPDATED for existing database
+// app/api/auth/verify-otp/route.js - With Rate Limiting
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db/mysql';
 import { generateToken } from '@/lib/auth/jwt';
+import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '@/lib/security/rateLimiter';
+import { generateCSRFToken } from '@/lib/security/csrf';
 
 export async function POST(request) {
   try {
     const { email, otp } = await request.json();
 
+    // ✅ Input validation
     if (!email || !otp) {
       return NextResponse.json(
         { success: false, message: 'Email and OTP are required' },
         { status: 400 }
       );
+    }
+
+    // ✅ Rate limiting by IP
+    const clientId = getClientIdentifier(request);
+    const rateLimit = checkRateLimit(clientId, 'login');
+    
+    if (!rateLimit.allowed) {
+      console.warn(`🚨 Rate limit exceeded for login: ${clientId}`);
+      return createRateLimitResponse(rateLimit);
     }
 
     // Get OTP from database
@@ -37,7 +49,7 @@ export async function POST(request) {
       );
     }
 
-    // Get user details based on role
+    // ✅ Get user details based on role (optimized query)
     let user = null;
     if (otpRecord.role === 'root') {
       const rootAdmins = await query({
@@ -66,7 +78,7 @@ export async function POST(request) {
       values: [otpRecord.id],
     });
 
-    // Generate JWT token with 1 HOUR expiry
+    // ✅ Generate JWT token with 1 HOUR expiry
     const tokenResult = await generateToken({
       userId: user.id,
       email: user.email,
@@ -81,6 +93,9 @@ export async function POST(request) {
       );
     }
 
+    // ✅ Generate CSRF token for the session
+    const csrfToken = generateCSRFToken();
+
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
@@ -90,9 +105,10 @@ export async function POST(request) {
         email: user.email,
         role: otpRecord.role,
       },
+      expiresIn: 3600, // 1 hour in seconds
     });
 
-    // Set cookie with 1 HOUR expiry
+    // ✅ Set auth token cookie with 1 HOUR expiry
     response.cookies.set('auth_token', tokenResult.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -101,11 +117,22 @@ export async function POST(request) {
       path: '/',
     });
 
+    // ✅ Set CSRF token cookie
+    response.cookies.set('csrf_token', csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 3600, // 1 hour
+      path: '/',
+    });
+
+    console.log(`✅ User logged in successfully: ${user.email}`);
+
     return response;
   } catch (error) {
     console.error('❌ Verify OTP error:', error);
     return NextResponse.json(
-      { success: false, message: 'Internal server error', error: error.message },
+      { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
