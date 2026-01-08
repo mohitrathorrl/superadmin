@@ -191,10 +191,7 @@ export default function LoginPage() {
             className="max-w-md mx-auto"
             style={{ height: "400px", width: "400px" }}
           />
-          <h2 className="text-2xl font-bold text-zinc-800 mt-6">Welcome Back!</h2>
-          <p className="text-zinc-600 mt-2 max-w-sm mx-auto">
-            Secure admin portal with enterprise-grade authentication
-          </p>
+    
         </div>
       </div>
 
@@ -202,33 +199,26 @@ export default function LoginPage() {
       <div className="flex w-full lg:w-1/2 min-h-screen items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <img 
-              src="https://fincloud-tech.s3.ap-south-1.amazonaws.com/finclouds_logo.png" 
-              alt="FinCloud Logo" 
-              className="h-8 sm:h-10" 
-            />
-          </div>
+         
 
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-xl border border-zinc-200 p-6 sm:p-8 space-y-6">
+             <div className="flex justify-center mb-8">
+            <img 
+              src="https://fincloud-tech.s3.ap-south-1.amazonaws.com/finclouds_logo.png" 
+              alt="FinCloud Logo" 
+              className="h-2 sm:h-10"
+              style={{width:"300px"}} 
+            />
+          </div>
             {/* Header */}
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-100 mb-4">
-                {step === "email" ? (
-                  <Mail className="h-6 w-6 sm:h-7 sm:w-7 text-zinc-700" />
-                ) : (
-                  <Lock className="h-6 w-6 sm:h-7 sm:w-7 text-zinc-700" />
-                )}
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">
+              
+              
+              <h1 className=" sm:text-3xl font-bold text-zinc-900">
                 {step === "email" ? "Sign in" : "Verify OTP"}
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-zinc-600">
-                {step === "email"
-                  ? "Enter your email to receive login code"
-                  : `Code sent to ${email}`}
-              </p>
+             
             </div>
 
             {/* Email Step */}
@@ -254,7 +244,7 @@ export default function LoginPage() {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-base" 
+                  className="w-full bg-black   hover:bg-zinc-800 !text-white text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-base" 
                   disabled={loading || !email}
                 >
                   {loading ? (
@@ -297,7 +287,7 @@ export default function LoginPage() {
                 {/* Verify Button */}
                 <Button 
                   onClick={handleVerifyOtp} 
-                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-medium transition-all text-base" 
+                  className="w-full bg-zinc-950 hover:bg-zinc-800 !text-white text-white py-3 rounded-xl font-medium transition-all text-base" 
                   disabled={loading || otp.some(d => !d)}
                 >
                   {loading ? <Spinner size={20} /> : "Verify & Login"}
@@ -308,7 +298,7 @@ export default function LoginPage() {
                   <button
                     onClick={handleResendOTP}
                     disabled={resendCooldown > 0}
-                    className="text-sm text-zinc-600 hover:text-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="text-sm  text-zinc-900 hover:text-zinc-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     {resendCooldown > 0 ? (
                       `Resend in ${resendCooldown}s`
@@ -332,10 +322,8 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Footer */}
-          <p className="text-center text-xs sm:text-sm text-zinc-500 mt-6">
-            Secured by enterprise-grade authentication
-          </p>
+         
+         
         </div>
       </div>
     </div>

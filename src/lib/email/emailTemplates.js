@@ -1,87 +1,108 @@
-// lib/email/emailTemplates.js - Professional OTP Email Template
-export function getOTPEmailTemplate(otp, userName = 'User') {
-  const currentYear = new Date().getFullYear();
-  
+// lib/email/emailTemplates.js - Clean OTP Email Template
+export function getOTPEmailTemplate(otp, userName = "User") {
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verification - RupeeLending</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333333;
-            background-color: #f4f7fa;
-            padding: 20px;
-        }
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px 30px;
-            text-align: center;
-            color: #ffffff;
-        }
-        .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        .content {
-            padding: 40px 30px;
-        }
-        .otp-container {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 10px;
-            padding: 30px;
-            text-align: center;
-            margin: 30px 0;
-            border: 2px dashed #667eea;
-        }
-        .otp-code {
-            font-size: 42px;
-            font-weight: 800;
-            color: #667eea;
-            letter-spacing: 8px;
-            font-family: 'Courier New', monospace;
-        }
-        .footer {
-            background-color: #f8f9fa;
-            padding: 30px;
-            text-align: center;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #333333;
+    }
+
+    .wrapper {
+      width: 100%;
+      padding: 40px 0;
+      text-align: center;
+    }
+
+    .card {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 36px 28px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    .title {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    .text {
+      font-size: 15px;
+      color: #555555;
+      line-height: 1.7;
+    }
+
+    .image-box {
+      margin: 30px 0 10px;
+    }
+
+    .otp-popup {
+      display: inline-block;
+      margin-top: -36px;
+      background: #ffffff;
+      border: 2px solid #000000;
+      border-radius: 14px;
+      padding: 14px 30px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 8px;
+      color: #000000;
+      font-family: "Courier New", monospace;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 13px;
+      color: #777777;
+    }
+  </style>
 </head>
+
 <body>
-    <div class="email-container">
-        <div class="header">
-            <h1>🔐 Email Verification</h1>
-        </div>
-        <div class="content">
-            <p>Hello <strong>${userName}</strong>,</p>
-            <div class="otp-container">
-                <div class="otp-code">${otp}</div>
-                <p>Valid for 10 minutes</p>
-            </div>
-        </div>
-        <div class="footer">
-            <p>© ${currentYear} RupeeLending. All rights reserved.</p>
-        </div>
+
+  <div class="wrapper">
+    <div class="card">
+
+      <p class="title">Hello <strong>${userName}</strong>,</p>
+
+      <p class="text">
+        Use the One-Time Password below to securely verify your login to
+        <strong>RupeeLending</strong>.
+      </p>
+
+      <div class="image-box">
+        <img
+          src="https://res.cloudinary.com/dunkn0qtu/image/upload/v1767859194/otpotp_h5wh6v.png"
+          alt="OTP Verification"
+          width="260"
+          style="display:block;margin:0 auto;"
+        />
+      </div>
+
+      <div class="otp-popup">
+        ${otp}
+      </div>
+
+      <p class="note">
+        This OTP is valid for <strong>10 minutes</strong>.  
+        Please do not share it with anyone.
+      </p>
+
     </div>
+  </div>
+
 </body>
 </html>
   `;
