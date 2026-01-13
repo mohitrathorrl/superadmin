@@ -52,105 +52,86 @@ export async function sendOTPEmail({ to, otp, role }) {
     subject: "🔐 Your Login OTP",
     html: `
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>OTP Verification</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #f4f6f8;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      background: #ffffff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    }
-    .hero img {
-      width: 100%;
-      display: block;
-    }
-    .content {
-      padding: 24px;
-      text-align: center;
-      color: #333333;
-    }
-    .content h2 {
-      margin: 0 0 10px;
-      color: #333333;
-    }
-    .content p {
-      font-size: 15px;
-      margin: 8px 0;
-      line-height: 1.6;
-    }
-    .otp-box {
-      margin: 20px auto;
-      display: inline-block;
-      padding: 14px 30px;
-      font-size: 28px;
-      letter-spacing: 6px;
-      font-weight: bold;
-      color: black;
-      background: #ebf2ef;
-      border: 2px dashed black;
-      border-radius: 10px;
-    }
-    .note {
-      font-size: 13px;
-      color: #666666;
-      margin-top: 14px;
-    }
-    .footer {
-      padding: 16px;
-      background: #fafafa;
-      text-align: center;
-      font-size: 12px;
-      color: #999999;
-    }
-    @media (max-width: 480px) {
-      .otp-box {
-        font-size: 24px;
-        padding: 12px 20px;
-      }
-    }
-  </style>
 </head>
-<body>
 
-  <div class="container">
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
 
-    <div class="hero">
-      <img
-        src="https://res.cloudinary.com/dunkn0qtu/image/upload/v1766146164/1766145983809-removebg-preview_dvs15x.png"
-        alt="Secure Login"
-      />
-    </div>
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center">
 
-    <div class="content">
-      <h2>Verify Your Login</h2>
+        <!-- Card -->
+        <table width="600" cellpadding="0" cellspacing="0"
+          style="background:#ffffff;border-radius:14px;overflow:hidden;
+          box-shadow:0 10px 30px rgba(0,0,0,0.08);margin:40px 0;">
 
-      <p>Hello 👋</p>
-      <p>Your One-Time Password (OTP) is:</p>
-      <div class="otp-box">${otp}</div>
+          <!-- Image Section -->
+          <tr>
+            <td align="center" style="padding:30px 0;position:relative;">
 
-      
-    </div>
+              <!-- Image -->
+              <img
+                src="https://res.cloudinary.com/dunkn0qtu/image/upload/v1767859194/otpotp_h5wh6v.png"
+                alt="OTP Verification"
+                width="260"
+                style="display:block;"
+              />
 
-    <div class="footer">
-      © 2025 <b>Super Admin Panel</b>. All rights reserved.
-    </div>
+              <!-- OTP Popup -->
+              <div
+                style="
+                  background:#ffffff;
+                  border:2px solid #000;
+                  border-radius:12px;
+                  padding:14px 26px;
+                  font-size:26px;
+                  font-weight:bold;
+                  letter-spacing:6px;
+                  color:#000;
+                  margin-top:-40px;
+                  display:inline-block;
+                  box-shadow:0 6px 16px rgba(0,0,0,0.15);
+                "
+              >
+                {{OTP}}
+              </div>
 
-  </div>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td align="center" style="padding:20px 40px 10px;">
+              <h2 style="margin:0;color:#333;">Verify Your Login</h2>
+              <p style="font-size:15px;color:#555;line-height:1.6;">
+                Use the One-Time Password below to complete your login.
+                This OTP is valid for <b>5 minutes</b>.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:16px;background:#fafafa;
+              font-size:12px;color:#999;">
+              © 2025 <b>Super Admin Panel</b>. All rights reserved.
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
 
 </body>
 </html>
+
     `,
   })
 }

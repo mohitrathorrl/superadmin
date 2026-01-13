@@ -1,121 +1,92 @@
-import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import { generateOTP, otpExpiry } from "@/lib/otp"
-import { sendOTPEmail } from "@/lib/mail"
+// app/api/auth/send-otp/route.js - Production (No Console Logs)
+import { NextResponse } from 'next/server';
+import { query } from '@/lib/db/mysql';
+import { sendOTPEmail } from '@/lib/email/sendEmail';
+import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '@/lib/security/rateLimiter';
+import crypto from 'crypto';
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    const { email } = await req.json()
+    const { email } = await request.json();
 
-    /* =========================
-       BASIC VALIDATION
-    ========================= */
     if (!email) {
       return NextResponse.json(
-        { message: "Email required" },
+        { success: false, message: 'Email is required' },
         { status: 400 }
-      )
+      );
     }
 
-    /* =========================
-       CHECK ROOT ADMIN
-    ========================= */
-    const [root] = await db.query(
-      `SELECT id FROM sup_root_admin 
-       WHERE email = ? AND is_active = 1 
-       LIMIT 1`,
-      [email]
-    )
-
-    /* =========================
-       CHECK SUPER ADMIN
-    ========================= */
-    const [admin] = await db.query(
-      `SELECT id FROM sup_admin_users 
-       WHERE email = ? AND is_active = 1 
-       LIMIT 1`,
-      [email]
-    )
-
-    if (root.length === 0 && admin.length === 0) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { message: "Unauthorized email" },
-        { status: 401 }
-      )
+        { success: false, message: 'Invalid email format' },
+        { status: 400 }
+      );
     }
 
-    const role = root.length ? "root" : "superadmin"
-
-    /* =========================
-       CLEANUP OLD OTPs (IMPORTANT)
-    ========================= */
-    await db.query(
-      `
-      DELETE FROM sup_login_otp
-      WHERE email = ?
-         OR expires_at < NOW()
-         OR is_used = 1
-      `,
-      [email]
-    )
-
-    /* =========================
-       RATE LIMIT (60 SEC)
-    ========================= */
-    const [lastOtp] = await db.query(
-      `
-      SELECT created_at 
-      FROM sup_login_otp
-      WHERE email = ?
-      ORDER BY id DESC
-      LIMIT 1
-      `,
-      [email]
-    )
-
-    if (lastOtp.length) {
-      const diffSeconds =
-        (Date.now() - new Date(lastOtp[0].created_at).getTime()) / 1000
-
-      if (diffSeconds < 60) {
-        return NextResponse.json(
-          { message: "Please wait before requesting OTP again" },
-          { status: 429 }
-        )
-      }
+    const clientId = getClientIdentifier(request);
+    const rateLimit = checkRateLimit(clientId, 'otp');
+    
+    if (!rateLimit.allowed) {
+      return createRateLimitResponse(rateLimit);
     }
 
-    /* =========================
-       GENERATE & SAVE OTP
-    ========================= */
-    const otp = generateOTP()
+    const [rootAdmins, superAdmins] = await Promise.all([
+      query({
+        query: 'SELECT id, email, name, "root" as role FROM sup_root_admin WHERE email = ? AND is_active = 1',
+        values: [email],
+      }),
+      query({
+        query: 'SELECT id, email, name, "superadmin" as role FROM sup_admin_users WHERE email = ? AND is_active = 1',
+        values: [email],
+      })
+    ]);
 
-    await db.query(
-      `
-      INSERT INTO sup_login_otp (email, otp, role, expires_at)
-      VALUES (?, ?, ?, ?)
-      `,
-      [email, otp, role, otpExpiry()]
-    )
+    let user = null;
+    let userRole = null;
 
-    /* =========================
-       SEND EMAIL
-    ========================= */
-    await sendOTPEmail({
-      to: email,
-      otp,
-      role,
-    })
+    if (rootAdmins.length > 0) {
+      user = rootAdmins[0];
+      userRole = 'root';
+    } else if (superAdmins.length > 0) {
+      user = superAdmins[0];
+      userRole = 'superadmin';
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'User not found or inactive' },
+        { status: 404 }
+      );
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    const [, emailResult] = await Promise.all([
+      query({
+        query: 'INSERT INTO sup_login_otp (email, otp, role, expires_at, is_used) VALUES (?, ?, ?, ?, 0)',
+        values: [email, otp, userRole, expiresAt],
+      }),
+      sendOTPEmail(email, otp, user.name)
+    ]);
+
+    if (!emailResult.success) {
+      return NextResponse.json(
+        { success: false, message: 'Failed to send email. Please try again.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
-      message: "OTP sent successfully",
-    })
-
-  } catch (err) {
-    console.error("SEND OTP ERROR:", err)
+      success: true,
+      message: 'OTP sent successfully to your email',
+      expiresIn: 600,
+    });
+  } catch (error) {
     return NextResponse.json(
-      { message: "Server error" },
+      { success: false, message: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
