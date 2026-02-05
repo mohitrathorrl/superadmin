@@ -1,28 +1,27 @@
-// lib/db/mysql.js - MySQL Database Connection
+// lib/db/mysql.js - MySQL Database Connection with Query Helper
 import mysql from 'mysql2/promise';
 
-// Create connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'salarykart_lms',
-  waitForConnections: true,
-  connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '10'),
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-});
+// ✅ Lazy-loaded connection pool
+let pool = null;
 
-// Test connection on startup
-pool.getConnection()
-  .then((connection) => {
-    console.log('✅ MySQL Database connected successfully!');
-    connection.release();
-  })
-  .catch((error) => {
-    console.error('❌ MySQL Database connection failed:', error.message);
-  });
+const getPool = () => {
+  if (!pool) {
+    pool = mysql.createPool({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: "sal@ryk@rt*&#2024",
+      database: process.env.DB_NAME || 'lms_v2',
+      waitForConnections: true,
+      connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
+      queueLimit: 0,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0,
+    });
+    
+    console.log('📊 MySQL pool created (mysql.js)');
+  }
+  return pool;
+};
 
 /**
  * Execute a SQL query
@@ -33,6 +32,7 @@ pool.getConnection()
  */
 export async function query({ query, values = [] }) {
   try {
+    const pool = getPool();
     const [results] = await pool.execute(query, values);
     return results;
   } catch (error) {
@@ -49,6 +49,7 @@ export async function query({ query, values = [] }) {
  * @returns {Promise<any>} Transaction result
  */
 export async function transaction(callback) {
+  const pool = getPool();
   const connection = await pool.getConnection();
   
   try {
@@ -69,12 +70,17 @@ export async function transaction(callback) {
  * Close the connection pool
  */
 export async function closePool() {
-  try {
-    await pool.end();
-    console.log('✅ MySQL connection pool closed');
-  } catch (error) {
-    console.error('❌ Error closing pool:', error.message);
+  if (pool) {
+    try {
+      await pool.end();
+      console.log('✅ MySQL connection pool closed');
+      pool = null;
+    } catch (error) {
+      console.error('❌ Error closing pool:', error.message);
+    }
   }
 }
 
-export default pool;
+// Export pool getter
+export const db = getPool();
+export default getPool();
